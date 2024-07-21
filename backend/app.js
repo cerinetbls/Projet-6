@@ -2,9 +2,8 @@ const express = require ('express');
 const bodyParser = require ('body-parser');
 const mongoose = require('mongoose');
 const Book = require('./models/Book')
-
-
 const bookRoutes = require('./routes/book');
+const userRoutes = require('./routes/user');
 
 mongoose.connect('mongodb+srv://cerine_tbls:@cluster0.lfdsenh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
 
@@ -26,5 +25,6 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 app.use('/api/books', bookRoutes);
+app.use('/api/auth', userRoutes);
 
 module.exports = app;
