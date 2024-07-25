@@ -1,6 +1,41 @@
 const Book = require("../models/Book");
 const fs = require("fs");
 
+exports.rateBook = (req, res, next) => {
+  const userId = req.auth.userId; 
+
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      if (book.ratings.find(rating => rating.userId === userId)) {
+        return res.status(403).json({ message: "Livre déjà noté." });
+      } else {
+        const newRating = {
+          userId: userId,
+          grade: req.body.rating
+        };
+
+        const updatedRatings = [...book.ratings, newRating];
+
+        const calcAverageRating = (ratings) => {
+          const sum = ratings.reduce((total, rate) => total + rate.grade, 0);
+          const average = sum / ratings.length;
+          return parseFloat(average.toFixed(2));
+        }
+
+        const updatedAverageRating = calcAverageRating(updatedRatings);
+
+        Book.findOneAndUpdate(
+          { _id: req.params.id },
+          { $push: { ratings: newRating }, averageRating: updatedAverageRating },
+          { new: true }
+        )
+          .then(updatedBook => res.status(201).json(updatedBook))
+          .catch(err => res.status(500).json({ err })); 
+      }
+    })
+    .catch(err => res.status(500).json({ err })); 
+  }
+
 exports.getAllBooks = (req, res, next) => {
   Book.find()
     .then((books) => {
@@ -16,7 +51,11 @@ exports.getAllBooks = (req, res, next) => {
 };
 
 exports.getBestBooks = (req, res, next) => {
-  //Voir critères
+  Book.find()
+    .sort({ averageRating: -1 }) 
+    .limit(3) 
+    .then(books => res.status(200).json(books)) 
+    .catch(err => res.status(400).json({ err })); 
 };
 
 exports.getOneBook = (req, res, next) => {
