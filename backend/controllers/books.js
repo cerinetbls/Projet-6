@@ -35,21 +35,19 @@ exports.rateBook = (req, res, next) => {
     })
     .catch(err => res.status(500).json({ err })); 
   }
-
-exports.getAllBooks = (req, res, next) => {
-  Book.find()
-    .then((books) => {
-      res.status(200).json({
-        books: books,
-      });
-    })
-    .catch((error) => {
-      res.status(400).json({
-        error: error,
-      });
-    });
-};
-
+  exports.getAllBooks = (req, res, next) => {
+    Book.find().then(
+      (books) => {
+        res.status(200).json(books);
+      }
+    ).catch(
+      (error) => {
+        res.status(400).json({
+          error: error
+        });
+      }
+    );
+  };
 exports.getBestBooks = (req, res, next) => {
   Book.find()
     .sort({ averageRating: -1 }) 
@@ -65,24 +63,32 @@ exports.getOneBook = (req, res, next) => {
 };
 
 exports.createBook = (req, res, next) => {
-  // Récupère les données du livre depuis le corps de la requête
-  const bookObject = JSON.parse(req.body.book);
-  delete bookObject._id;
-  delete bookObject._userId;
-  const book = new Book({
-    ...bookObject,
-    userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
-  });
+  try {
+    // Récupère les données du livre depuis le corps de la requête
+    const bookObject = JSON.parse(req.body.book);
+    delete bookObject._id;
+    delete bookObject._userId;
 
-  book
-    .save()
-    .then(() => {
-      res.status(201).json({ message: "Livre enregistré avec succès." });
-    })
-    .catch((error) => {
-      res.status(400).json({ error });
+    const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+      imageUrl: req.file ? `${req.protocol}://${req.get("host")}/images/${req.file.filename}` : null
     });
+
+    if (!book.imageUrl) {
+      return res.status(400).json({ error: 'Image URL is required' });
+    }
+
+    book.save()
+      .then(() => {
+        res.status(201).json({ message: "Livre enregistré avec succès." });
+      })
+      .catch((error) => {
+        res.status(400).json({ error });
+      });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 exports.modifyBook = (req, res, next) => {

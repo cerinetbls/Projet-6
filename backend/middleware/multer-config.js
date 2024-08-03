@@ -31,18 +31,15 @@ const optimizeImage = async (req, res, next) => {
         req.file.compressedFilename = req.file.filename.split('.')[0] + '.webp';
         req.file.compressedFilePath = './images/' + req.file.compressedFilename;
 
-        // Utiliser sharp pour compresser l'image et la convertir en format webp
         await sharp(req.file.path)
             .resize(463, 595) 
             .webp({ quality: 90 }) 
             .toFile(req.file.compressedFilePath);
 
-        // Supprimer le fichier d'origine après compression
         fs.unlink(req.file.path, (error) => {
             if (error) console.log(error);
         });
 
-        // Mettre à jour les informations du fichier dans la requête
         req.file.path = req.file.compressedFilePath;
         req.file.filename = req.file.compressedFilename;
 
